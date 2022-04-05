@@ -1,0 +1,5 @@
+---
+# tasks file for update_zabbix
+
+- name: Update zabbix
+  import_tasks: update_zabbix.yaml

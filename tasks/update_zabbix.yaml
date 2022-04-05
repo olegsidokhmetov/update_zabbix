@@ -1,0 +1,38 @@
+---
+
+- name: Ansible find files in folder /etc/apt/apt.conf.d using Python regex
+  find:
+    paths: /etc/apt/apt.conf.d
+    patterns: "[0-9]{2}periodic"
+    recurse: yes
+    use_regex: yes
+  register: register_name
+
+- name: Output if files is NOT exist
+  debug:
+    msg: "The file is NOT exist with name **periodic THEN we are creating the new file with name 02periodic"
+  when: register_name.matched == 0
+
+- name: Touch the file 02periodic if files **periodic does NOT exists
+  copy:
+    dest: /etc/apt/apt.conf.d/02periodic
+    content: |
+      APT::Periodic::Enable "1";
+      APT::Periodic::Update-Package-Lists "1";
+  when: register_name.matched == 0
+
+- name: Output if files with names **periodic exists
+  debug:
+    msg: "The file with name **periodic EXIST we do nothing"
+  when: register_name.matched >= 0
+  
+- name: Add configuration to file "apt.conf"
+  copy:
+    dest: "/etc/zabbix/zabbix_agentd.d/apt.conf"
+    content: |
+      # Treat security and regular updates differently
+      # This is just a simulation, that can be run under zabbix user
+      # Since updating packages lists (apt-get update) requires root user,
+      # use APT::Periodic or some other functionality for that
+      UserParameter=apt.security,apt-get -s upgrade | grep -ci ^inst.*security | tr -d '\n'
+      UserParameter=apt.updates,apt-get -s upgrade | grep -iPc '^Inst((?!security).)*$' | tr -d '\n'
